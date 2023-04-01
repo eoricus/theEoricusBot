@@ -7,10 +7,19 @@
   "author": "eoricus",
   "license": "WTFPL",
   "dependencies": {
+    "@puregram/hear": "^2.0.2",
+    "dotenv": "^16.0.3",
     "mongoose": "^7.0.3",
+    "openai": "^3.2.1",
     "paint-console": "^0.0.1",
     "puregram": "^2.10.2",
+    "ts-node": "^10.9.1",
     "tsc": "^2.0.4",
     "typescript": "^5.0.3"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "nodemon src/index.ts"
   }
 }
