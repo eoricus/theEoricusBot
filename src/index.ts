@@ -191,6 +191,11 @@ hearManager.hear(/ai(.*)/i, async (context: MessageContext & ExtraData) => {
                 },
               ],
             },
+            $push: {
+              inactiveRequests: {
+                $each: user.requests
+              }
+            }
           }
         );
       }

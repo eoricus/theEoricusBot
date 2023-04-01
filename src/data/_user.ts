@@ -4,6 +4,7 @@ export interface IUser extends Document {
   userID: number;
   isPremium: boolean;
   premiumWasActivated: Date;
+  inactiveRequests: { text: string; wasSendAt: Date; answer: string }[];
   requests: { text: string; wasSendAt: Date; answer: string }[];
   total: number;
 }
@@ -20,6 +21,18 @@ export const userSchema: Schema<IUser> = new Schema<IUser>({
   premiumWasActivated: {
     type: Date,
   },
+  inactiveRequests: [
+    {
+      text: {
+        type: String,
+        required: true,
+      },
+      wasSendAt: {
+        type: Date,
+        required: true,
+      },
+    },
+  ],
   requests: [
     {
       text: {
