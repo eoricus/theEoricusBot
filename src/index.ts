@@ -168,14 +168,14 @@ hearManager.hear(/ai(.*)/i, async (context: MessageContext & ExtraData) => {
   }
 
   if (prompt) {
-    if (user.requests.length >= 10) {
+    if (user.requests.length >= 20) {
       console.log(user.requests[0].wasSendAt.getTime() - new Date().getTime());
       if (
         user.requests[0].wasSendAt.getTime() - new Date().getTime() <=
         86400
       ) {
         return context.send(
-          "Эээ... Извини кореш, я не отвечаю больше чем на 10 запросов в сутки. Время деньги, сам понимаешь. Если хочешь неограниченный доступ -- пиши @theEoricus"
+          "Эээ... Извини кореш, я не отвечаю больше чем на 20 запросов в сутки. Время деньги, сам понимаешь. Если хочешь неограниченный доступ -- пиши @theEoricus"
         );
       } else {
         data.user.updateOne(
