@@ -1,0 +1,16 @@
+{
+  "name": "theEoricusBot",
+  "version": "1.0.0",
+  "description": "The bot that won't let you forget me",
+  "main": "index.ts",
+  "repository": "https://github.com/erikmikoyan2003/theEoricusBot.git",
+  "author": "eoricus",
+  "license": "WTFPL",
+  "dependencies": {
+    "mongoose": "^7.0.3",
+    "paint-console": "^0.0.1",
+    "puregram": "^2.10.2",
+    "tsc": "^2.0.4",
+    "typescript": "^5.0.3"
+  }
+}
