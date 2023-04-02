@@ -1,17 +1,13 @@
-import { Schema, Document, model } from "mongoose";
-
-export interface IUser extends Document {
-  userID: number;
-  isPremium: boolean;
-  premiumWasActivated: Date;
-  inactiveRequests: { text: string; wasSendAt: Date; answer: string }[];
-  requests: { text: string; wasSendAt: Date; answer: string }[];
-  total: number;
-}
+import { Schema, model } from "mongoose";
+import IUser from "../types/IUser";
 
 export const userSchema: Schema<IUser> = new Schema<IUser>({
   userID: {
     type: Number,
+    required: true,
+  },
+  username: {
+    type: String,
     required: true,
   },
   isPremium: {
@@ -21,21 +17,15 @@ export const userSchema: Schema<IUser> = new Schema<IUser>({
   premiumWasActivated: {
     type: Date,
   },
-  inactiveRequests: [
-    {
-      text: {
-        type: String,
-        required: true,
-      },
-      wasSendAt: {
-        type: Date,
-        required: true,
-      },
-    },
-  ],
   requests: [
     {
-      text: {
+      role: {
+        type: String,
+        enum: ["user", "assistant", "system"],
+        required: true,
+        default: "user",
+      },
+      content: {
         type: String,
         required: true,
       },
@@ -48,7 +38,7 @@ export const userSchema: Schema<IUser> = new Schema<IUser>({
   total: {
     type: Number,
     required: true,
-    default: 0
+    default: 0,
   },
 });
 

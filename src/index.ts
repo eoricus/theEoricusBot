@@ -1,246 +1,318 @@
 import "paint-console";
 
-// Load environment variables from .env file
-import * as dotenv from "dotenv";
-dotenv.config({ path: __dirname + "/../.env" });
-
-// Default answers
-import answers from "./answers";
-
-// DataBase
 import data from "./data";
 
-import posts from "./posts.json";
-
-import { Telegram, MessageContext, InlineKeyboard } from "puregram";
+import { Telegram } from "puregram";
 import { HearManager } from "@puregram/hear";
-
-const telegram = Telegram.fromToken(process.env.TG_TOKEN as string);
-
-const hearManager = new HearManager<MessageContext & ExtraData>();
+import IExtraCtx from "./types/IExtraCtx";
 
 import { Configuration, OpenAIApi } from "openai";
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
 
-interface ExtraData {
-  IsUserRegistered: boolean;
-  lastRequests: { text: string; wasSendAt: Date; answer: string }[];
-}
+import env from "../env.json";
+import { IPromptFields } from "./types/IPrompt";
 
-telegram.updates.on(
-  "message",
-  async (context: MessageContext & ExtraData, next) => {
-    let user = await data.user.findOne({ userID: context.senderId });
+const telegram = Telegram.fromToken(env.tg.token);
+const hearManager = new HearManager<IExtraCtx>();
 
-    if (user) {
-      context.IsUserRegistered = true;
-      context.lastRequests = user.requests;
-    } else {
-      user = await data.user.create({
-        userID: context.senderId,
-        isPremium: false,
-        requests: [],
-      });
-      context.IsUserRegistered = false;
-      context.lastRequests = user.requests;
-    }
-
-    console.log(context.lastRequests);
-    return next();
-  }
+const openai = new OpenAIApi(
+  new Configuration({
+    apiKey: env.openai.token,
+  })
 );
+
+/**
+ * Modifies the context by adding user fields from the database
+ */
+telegram.updates.on("message", async (context: IExtraCtx, next) => {
+  let user;
+  if (!(user = await data.user.findOne({ userID: context.senderId }))) {
+    user = await data.user.create({
+      userID: context.senderId,
+      username: context.from
+        ? context.from.username
+        : context.isPM()
+        ? context.chat.username
+        : "",
+      isPremium: false,
+      requests: [],
+      total: 0,
+    });
+  }
+  context.user = user;
+
+  if (!context.isPM()) {
+    let conversation;
+    if (!(conversation = await data.chat.findOne({ chatID: context.chatId }))) {
+      conversation = await data.chat.create({
+        chatID: context.chatId,
+        isPremium: false,
+        mailing: true,
+      });
+    }
+    context.conversation = conversation;
+  }
+  return next();
+});
 telegram.updates.on("message", hearManager.middleware);
 
-hearManager.hear(/start/i, async (context: MessageContext & ExtraData) => {
-  context.send(
-    `
-<code>hello, world!</code>\n\n\
-Я чат-бот, созданный @eoricus. Вот что я умею:\n\
-<code>/start</code> -- приветственное сообщение\n\
-<code>/help</code> -- список команд (то, что вы сейчас видите)\n\
-<code>/ai (запрос) </code> -- на ваш вопрос ответит искусственный интеллект с моим разумом (не больше 20 запросов от юзера в день)\n\
-<code>/on или /off</code> -- активация или отмена подписки
-`,
+/**
+ * Sends the user an start message with a list of commands
+ */
+hearManager.hear(/^(\/)?(start|начать)/i, async (context: IExtraCtx) =>
+  context.reply(env.default.start, { parse_mode: "HTML" })
+);
+
+/**
+ * Sends the user a message with a list of commands
+ */
+hearManager.hear(/^(\/)?help/i, (context: IExtraCtx) =>
+  context.reply(env.default.help, { parse_mode: "HTML" })
+);
+
+/**
+ * Turns on messages from the Telegram chat channel
+ */
+hearManager.hear(/^(\/)?on/i, async (context: IExtraCtx) => {
+  if (context.isPM()) {
+    return context.reply(env.default.mailing.on.fromPM);
+  }
+
+  let chat = await data.chat.findOneAndUpdate(
+    { chatID: context.chatId },
+    {
+      $set: {
+        mailing: true,
+      },
+    }
+  );
+
+  context.reply(
+    chat?.mailing
+      ? env.default.mailing.on.isMailingAlreadyOn
+      : env.default.mailing.on.isMailingOn,
     { parse_mode: "HTML" }
   );
 });
 
-hearManager.hear(/help/i, (context: MessageContext & ExtraData) =>
+/**
+ * Turns off messages from the Telegram chat channel
+ */
+hearManager.hear(/^(\/)?off/i, async (context: IExtraCtx) => {
+  if (context.isPM()) {
+    return context.reply(env.default.mailing.off.fromPM);
+  }
+
+  let chat = await data.chat.findOneAndUpdate(
+    { chatID: context.chatId },
+    {
+      $set: {
+        mailing: false,
+      },
+    }
+  );
+
   context.send(
-    `
-    Вот что я умею:\n\
-<code>/start</code> -- приветственное сообщение\n\
-<code>/help</code> -- список команд (то, что вы сейчас видите)\n\
-<code>/ai (запрос) </code> -- на ваш вопрос ответит искусственный интеллект с моим разумом (не больше 20 запросов от юзера в день)\n\
-<code>/on или /off</code> -- активация или отмена рассылки
-`,
+    !chat?.mailing
+      ? env.default.mailing.off.isMailingAlreadyOff
+      : env.default.mailing.off.isMailingOff,
     { parse_mode: "HTML" }
-  )
+  );
+});
+
+/**
+ * Set prompts for chatGPT.
+ * Available only to admins
+ *
+ * TODO:
+ * - [ ]  Adding a lot of prompts at once.
+ *        Ability to use forwarded messages to generate prompts
+ */
+hearManager.hear(
+  { text: /^(\/)?setPrompt/i, senderId: env.tg.adminIDs },
+  async (context: IExtraCtx) => {
+    /**
+     * If the message is a reply, then prompt is taken from the message
+     * in response to which the message was sent.
+     *
+     * Otherwise the prompt is taken from a user-specified prompt
+     */
+    let request;
+    if (context.hasReplyMessage() && context.replyMessage.text) {
+      request = context.replyMessage.text;
+    } else if (
+      !(request = context.text?.match(/^(\/)?setPrompt\s*(?<Prompt>.*)/i)
+        ?.groups?.Prompt)
+    ) {
+      return context.reply(env.default.setPrompt.errorIncorrectPrompt);
+    }
+
+    try {
+      // TODO minimize and refactor
+      let prompt = JSON.parse(request);
+      if (!(prompt.role && prompt.content))
+        return context.reply(env.default.setPrompt.errorIncorrectPrompt);
+      let newPropmpt = await data.prompt.findOneAndUpdate(
+        { role: prompt.role },
+        prompt,
+        { upsert: true, new: true }
+      );
+
+      return context.reply(
+        newPropmpt
+          ? `Назначена новая подсказка:\n <code>{"role": ${prompt.role}, "content": ${prompt.content}}</code>`
+          : "Неизвестная ошибка!",
+        { parse_mode: "HTML" }
+      );
+    } catch (e) {
+      return context.reply(env.default.setPrompt.errorIncorrectPrompt);
+    }
+  }
 );
 
-// hearManager.hear(/delay/i, (context: MessageContext & ExtraData) =>
-//   context.send("dw", { parse_mode: "HTML" })
-// );
+/**
+ * Set premium statos for user.
+ * Available only to admins
+ */
+hearManager.hear(
+  { text: /^(\/)?setPremium/i, senderId: env.tg.adminIDs },
+  async (context: IExtraCtx) => {
+    /**
+     * If the message is a reply, then premium status
+     * is assigned to the user whose message is replied to.
+     *
+     * Otherwise the identifier entered by the user in the message body is used
+     */
+    let userID;
 
-hearManager.hear(/on/i, async (context: MessageContext & ExtraData) => {
-  if (!context.isPM()) {
-    let chat = await data.chat.findOneAndUpdate(
-      { chatID: context.chatId },
-      {
-        $set: {
-          mailing: true,
-        },
-      }
-    );
-    if (!chat) {
-      chat = await data.chat.create({
-        chatID: context.chatId,
-        isPremium: false,
-        requests: [],
-        delay: 40,
-        offset: 0,
-        mailing: true,
-      });
+    if (context.hasReplyMessage()) {
+      userID = context.replyMessage.from?.id;
+    } else {
+      userID = context.text?.match(/^(\/)?setPremium\s*(?<userID>\d*)/i)?.groups
+        ?.userID;
     }
 
-    context.send(
-      chat?.mailing
-        ? "Рассылка уже включена, вы уже получаете посты от лучшего телеграмм канала во вселенной"
-        : "Рассылка включена! Теперь вы будете получать посты от лучшего телеграмм канала во вселенной",
-      { parse_mode: "HTML" }
-    );
-  } else {
-    context.send(
-      "Рассылки работают только в групповых чатах. Зачем вам рассылка? Вы можете просто подписаться!\n\n@eoricus"
-    );
-  }
-});
-
-hearManager.hear(/off/i, async (context: MessageContext & ExtraData) => {
-  if (!context.isPM()) {
-    let chat = await data.chat.findOneAndUpdate(
-      { chatID: context.chatId },
-      {
-        $set: {
-          mailing: false,
-        },
-      }
-    );
-
-    if (!chat) {
-      chat = await data.chat.create({
-        chatID: context.chatId,
-        isPremium: false,
-        requests: [],
-        delay: 40,
-        offset: 0,
-        mailing: false,
-      });
+    if (!userID) {
+      return context.reply(env.default.setPremium.errorIncorrectUserID);
     }
 
-    context.send(
-      !chat?.mailing
-        ? "Рассылка уже отключена, вы и так лишены постов от лучшего телеграмм канала во вселенной"
-        : "Рассылка отключена! Теперь вы не будете получать посты от лучшего телеграмм канала во вселенной",
-      { parse_mode: "HTML" }
+    /**
+     * The document of the user to whom premium status is assigned.
+     * If the document is not found, then a message is sent that the user is not found
+     */
+    let premiumUser = await data.user.findOneAndUpdate(
+      !isNaN(Number(userID)) ? { userID: userID } : { userName: userID },
+      {
+        $set: {
+          isPremium: true,
+          premiumWasActivated: new Date(),
+        },
+      },
+      { new: true }
     );
-    console.log(chat);
-  } else {
-    context.send(
-      "Рассылки работают только в групповых чатах. Зачем вам рассылка? Вы можете просто подписаться!\n\n@eoricus"
-    );
-  }
-});
 
-hearManager.hear(/ai(.*)/i, async (context: MessageContext & ExtraData) => {
-  let prompt = context.text?.match(/ai(?<Prompt>.*)/i)?.groups?.Prompt;
-  let user = await data.user.findOne({
-    userID: context.senderId,
+    if (premiumUser) {
+      return context.reply(
+        `Теперь ${premiumUser.username} может делать неограниченное количество запросов!`
+      );
+    } else {
+      return context.reply(env.default.setPremium.errorUnfoundedUser);
+    }
+  }
+);
+
+/**
+ * Talk with AI
+ * TODO:
+ * - [ ] Simplify adding prompts;
+ * - [ ] Add 3 random user prompts;
+ */
+hearManager.hear(/^(\/)?ai/i, async (context: IExtraCtx) => {
+  let request: string | undefined;
+  if (context.hasReplyMessage() && context.replyMessage.text) {
+    request = context.replyMessage.text;
+  } else {
+    request = context.text?.match(/ai(?<Request>.*)/i)?.groups?.Request;
+  }
+
+  // Incorrect request
+  if (!request) {
+    return context.reply(env.default.ai.errorRequestIsEmpty);
+  }
+
+  // Too many request
+  if (
+    context.user.requests.length >= 30 &&
+    context.user.requests[
+      context.user.requests.length - 30
+    ].wasSendAt.getTime() -
+      new Date().getTime() <=
+      86400
+  ) {
+    return context.reply(env.default.ai.errorTooManyRequest);
+  }
+
+  const systemPromptFromDB = await data.prompt.findOne({ role: "system" });
+  let systemPrompt: IPromptFields = {
+    role: "system",
+    content: systemPromptFromDB
+      ? systemPromptFromDB.content
+      : env.openai.defaultPrompt.content,
+  };
+
+  const resp = await openai.createChatCompletion({
+    model: "gpt-3.5-turbo",
+    messages: [
+      systemPrompt,
+      ...context.user.requests.slice(0, 3).map((i: IPromptFields) => {
+        console.log(i.role);
+        return { role: i.role, content: i.content };
+      }),
+      {
+        role: "user",
+        content: request,
+      },
+    ],
   });
 
-  if (!user) {
-    return context.send(
-      "Эээ... Тут технические шоколадки кореш, я пока не работаю с тобой"
-    );
-  }
-
-  if (prompt) {
-    if (user.requests.length >= 20) {
-      console.log(user.requests[0].wasSendAt.getTime() - new Date().getTime());
-      if (
-        user.requests[0].wasSendAt.getTime() - new Date().getTime() <=
-        86400
-      ) {
-        return context.send(
-          "Эээ... Извини кореш, я не отвечаю больше чем на 20 запросов в сутки. Время деньги, сам понимаешь. Если хочешь неограниченный доступ -- пиши @theEoricus"
-        );
-      } else {
-        data.user.updateOne(
+  context.send(resp.data.choices[0].message?.content || "Неизвестная ошибка");
+  return await data.user.updateOne(
+    {
+      userID: context.senderId,
+    },
+    {
+      $push: {
+        requests: [
           {
-            userID: context.senderId,
-          },
-          {
-            $set: {
-              requests: [
-                {
-                  text: prompt,
-                  wasSendAt: new Date(),
-                },
-              ],
-            },
-            $push: {
-              inactiveRequests: {
-                $each: user.requests
-              }
-            }
-          }
-        );
-      }
-    }
-
-    const chat = await openai.createChatCompletion({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: posts.prompt + posts.posts.join(";\n\n"),
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    });
-
-    context.send(chat.data.choices[0].message?.content || "Неизвестная ошибка");
-    await data.user.updateOne(
-      {
-        userID: context.senderId,
-      },
-      {
-        $push: {
-          requests: {
-            text: prompt,
+            role: "user",
+            content: request,
             wasSendAt: new Date(),
           },
-        },
-        $inc: {
-          total: 1,
-        },
-      }
-    );
-  } else {
-    context.send(
-      "Да-да, я загрузил себя в чатГПТ. Чтобы говорить со мной, отправь запрос после '/ai'"
-    );
-  }
+          {
+            role: "assistant",
+            content:
+              resp.data.choices[0].message?.content || "Неизвестная ошибка",
+            wasSendAt: new Date(),
+          },
+        ],
+      },
+      $inc: {
+        total: 1,
+      },
+    }
+  );
 });
 
-hearManager.onFallback((context) => context.send("command not found."));
+/**
+ * TODO:
+ * - [ ]  Dialogue without the "/ai" command for forwarded messages
+ *        in chats, as well as free discussion with the user in private messages
+ */
+// hearManager.onFallback((context) => context.send("command not found."));
 
+/**
+ * TODO:
+ * - [ ] Replies to messages in the channel in the comments
+ */
 telegram.updates.on("channel_post", async (context) => {
   if (context.chat.id != -1001734030085) {
     return;
@@ -268,28 +340,7 @@ telegram.updates
   .then(() => {
     console.info(`[@${telegram.bot.username}] Started polling`);
     telegram.api.setMyCommands({
-      commands: [
-        {
-          command: "/start",
-          description: "Начать",
-        },
-        {
-          command: "/help",
-          description: "Список команд",
-        },
-        {
-          command: "/ai",
-          description: "Ответы от ИИ в моем стиле",
-        },
-        {
-          command: "/on",
-          description: "Подписка на рассылку",
-        },
-        {
-          command: "/off",
-          description: "Отмена рассылки",
-        },
-      ],
+      commands: env.listOfCommands,
     });
   })
   .catch(console.error);
