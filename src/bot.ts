@@ -11,10 +11,11 @@ import IExtraCtx from "./types/IExtraCtx";
 
 /** */
 import registerListeners from "./messageListeners";
-import { ask, GPTMode } from "./messageListeners/_gpt";
+// import { ask, GPTMode } from "./messageListeners/gpt/utils";
 
 /** */
 import env from "../env.json";
+import callbackQueryListener from "./callbackQueryListener";
 
 const bot = Telegram.fromToken(env.tg.bot.token),
   logger = Telegram.fromToken(env.tg.logger.token);
@@ -71,58 +72,6 @@ bot.updates.on("message", botHearManager.middleware);
 /**
  * Handles button presses
  */
-bot.updates.on("callback_query", async (context) => {
-  const queryPayload = context.queryPayload as {
-    [key: string]: string;
-  };
-
-  switch (queryPayload.command) {
-    case "to":
-      await data.user.findOneAndUpdate(
-        { userID: context.senderId },
-        { $set: { actualConversation: queryPayload.id } }
-      );
-      context.message?.editMessageText(
-        `Вы переключились к диалогу "${
-          (await data.conv.findById(queryPayload.id))?.title
-        }"`
-      );
-      return;
-    case "clear":
-      const user = await data.user.findOne({ userID: context.senderId });
-
-      if (!user) {
-        console.log("dw");
-        return context.message?.editMessageText("Неизвестная ошибка");
-      }
-
-      const conversationIndex = user.conversations?.indexOf(queryPayload.id);
-
-      if (conversationIndex === -1 || conversationIndex === undefined) {
-        console.log(user.conversations?.indexOf(queryPayload.id));
-        return context.message?.editMessageText("Неизвестная ошибка");
-      }
-
-      user.conversations?.splice(conversationIndex, 1);
-
-      if (
-        user.actualConversation &&
-        user.actualConversation == queryPayload.id
-      ) {
-        user.actualConversation = "";
-      }
-
-      await user.save();
-      let conv = await data.conv.findByIdAndUpdate(queryPayload.id, {
-        $set: {
-          isDeleted: true,
-        },
-      });
-      context.message?.editMessageText(`Диалог <<${conv?.title}>> почищен!`);
-      return;
-    default:
-      break;
-  }
-});
+bot.updates.on("callback_query", callbackQueryListener);
 
 export default bot;

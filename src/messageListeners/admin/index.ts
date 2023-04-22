@@ -4,8 +4,8 @@ import IExtraCtx from "../../types/IExtraCtx";
 import env from "../../../env.json";
 import { Telegram } from "puregram";
 
-import { toggleMailing } from "./toggleMailing";
-import { setPremium } from "./setPremium";
+import { toggleMailing } from "./commandToggleMailing";
+import { setPremium } from "./commandSetPremium";
 
 export default (manager: HearManager<IExtraCtx>, logger: Telegram) => {
   manager.hear(
