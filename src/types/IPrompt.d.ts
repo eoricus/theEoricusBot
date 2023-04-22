@@ -1,8 +1,4 @@
-import { Document } from "mongoose";
-
-export type IPromptFields = {
+export default interface IPrompt {
   role: "user" | "assistant" | "system";
   content: string;
-};
-
-export type IPrompt = Document & IPromptFields;
+}

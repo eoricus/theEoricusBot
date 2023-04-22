@@ -1,10 +1,11 @@
 import { Schema, model } from "mongoose";
 import IUser from "../types/IUser";
 
-export const userSchema: Schema<IUser> = new Schema<IUser>({
+const userSchema = new Schema<IUser>({
   userID: {
     type: Number,
     required: true,
+    unique: true,
   },
   username: {
     type: String,
@@ -14,31 +15,24 @@ export const userSchema: Schema<IUser> = new Schema<IUser>({
     type: Boolean,
     required: true,
   },
-  premiumWasActivated: {
+  wasPremiumActivated: {
     type: Date,
   },
-  requests: [
+  conversations: [
     {
-      role: {
-        type: String,
-        enum: ["user", "assistant", "system"],
-        required: true,
-        default: "user",
-      },
-      content: {
-        type: String,
-        required: true,
-      },
-      wasSendAt: {
-        type: Date,
-        required: true,
-      },
+      type: String,
     },
   ],
+  actualConversation: {
+    type: String,
+  },
   total: {
     type: Number,
     required: true,
     default: 0,
+  },
+  wasSentLastRequest: {
+    type: Date,
   },
 });
 

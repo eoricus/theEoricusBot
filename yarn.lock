@@ -34,6 +34,14 @@
   dependencies:
     middleware-io "^2.8.0"
 
+"@puregram/prompt@^1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@puregram/prompt/-/prompt-1.2.0.tgz#3c9b44446d177db71cb999c21ed6505ce04931d8"
+  integrity sha512-mfYzu5O7NcxwINym5aW2WnpldqIP+65Ut/3YpI7P/wfQ5HOe8Z8qk+wRvWgRGYmCk9Ak+QV4J9GfGKJtp2wSeg==
+  dependencies:
+    inspectable "^1.2.0"
+    middleware-io "^2.8.0"
+
 "@tsconfig/node10@^1.0.7":
   version "1.0.9"
   resolved "https://registry.yarnpkg.com/@tsconfig/node10/-/node10-1.0.9.tgz#df4907fc07a886922637b15e02d4cebc4c0021b2"

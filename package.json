@@ -8,6 +8,7 @@
   "license": "WTFPL",
   "dependencies": {
     "@puregram/hear": "^2.0.2",
+    "@puregram/prompt": "^1.2.0",
     "dotenv": "^16.0.3",
     "mongoose": "^7.0.3",
     "openai": "^3.2.1",

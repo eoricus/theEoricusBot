@@ -1,14 +1,12 @@
-import { Document } from "mongoose";
+import { Document, ObjectId } from "mongoose";
 
 export default interface IUser extends Document {
   userID: number;
   username: string;
   isPremium: boolean;
-  premiumWasActivated: Date;
-  requests: {
-    role: "user" | "assistant" | "system";
-    content: string;
-    wasSendAt: Date;
-  }[];
+  wasPremiumActivated?: Date;
+  conversations?: string[];
+  actualConversation?: string;
   total: number;
+  wasSentLastRequest?: Date;
 }

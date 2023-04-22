@@ -3,8 +3,8 @@ import "paint-console";
 import mongoose from "mongoose";
 
 import user from "./_user";
-import conversation from "./_conversation";
-import prompt from "./_prompt";
+import chat from "./_chat";
+import conv from "./_conv";
 
 mongoose
   .connect(process.env.DATABASE_URI || "mongodb://127.0.0.1:27017/default")
@@ -19,6 +19,6 @@ mongoose
 
 export default {
   user: user,
-  chat: conversation,
-  prompt: prompt,
+  chat: chat,
+  conv: conv,
 };

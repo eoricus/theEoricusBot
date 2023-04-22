@@ -1,8 +1,10 @@
 import { MessageContext } from "puregram";
-import { IUser } from "../data/_user";
-import { IConversation } from "../data/_conversation";
+import IUser from "./IUser";
+import { IChat } from "./IChat";
+import { IConv } from "./IConv";
 
 export default interface IExtraCtx extends MessageContext {
   user: IUser;
-  conversation: IConversation;
+  chatData: IChat;
+  conv: IConv | null;
 }

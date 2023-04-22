@@ -1,8 +1,8 @@
 import { Schema, model } from "mongoose";
-import { IConversation } from "../types/IConversation";
+import { IChat } from "../types/IChat";
 
-export const conversationSchema: Schema<IConversation> =
-  new Schema<IConversation>({
+export const chatSchema: Schema<IChat> =
+  new Schema<IChat>({
     chatID: {
       type: Number,
       required: true,
@@ -21,4 +21,4 @@ export const conversationSchema: Schema<IConversation> =
     },
   });
 
-export default model<IConversation>("Conversation", conversationSchema);
+export default model<IChat>("Chat", chatSchema);
