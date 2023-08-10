@@ -6,24 +6,15 @@ import data from "../../data";
  *
  * Toggles mailing from the @theEoricus channel on or off
  */
-export const toggleMailing = async (context: IExtraCtx, turnOn: boolean) => {
+async function toggleMailing(context: IExtraCtx, turnOn: boolean) {
   if (context.isPM()) {
     return context.reply(
       "Рассылки работают только в групповых чатах.\nЗачем вам рассылка? Вы можете просто подписаться!\n\n@eoricus"
     );
   }
 
-  let chat = await data.chat.findOneAndUpdate(
-    { chatID: context.chatId },
-    {
-      $set: {
-        mailing: turnOn,
-      },
-    }
-  );
-
   context.send(
-    chat?.mailing === turnOn
+    context.chatData.mailing === turnOn
       ? `Рассылка уже ${turnOn ? "включена" : "отключена"}, вы уже ${
           turnOn ? "получаете" : "не получаете"
         } посты от лучшего телеграмм канала во вселенной`
@@ -32,4 +23,16 @@ export const toggleMailing = async (context: IExtraCtx, turnOn: boolean) => {
         } получать посты от лучшего телеграмм канала во вселенной`,
     { parse_mode: "HTML" }
   );
+
+  context.chatData.mailing = turnOn;
+  return await context.chatData.save();
+}
+
+const toggleMailingOn = (context: IExtraCtx) => {
+  toggleMailing(context, true);
 };
+const toggleMailingOff = (context: IExtraCtx) => {
+  toggleMailing(context, false);
+};
+
+export { toggleMailingOn, toggleMailingOff };

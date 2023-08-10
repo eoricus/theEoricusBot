@@ -16,7 +16,7 @@ async function commandAI(context: IExtraCtx) {
    */
   let match: {
     request?: string;
-  } = context.text?.match(/^(\/)?ai\s*(?<request>.*)/i)?.groups || {};
+  } = context.text?.match(/^((\/)?ai\s*)?(?<request>.*)/i)?.groups || {};
 
   /**
    * Array of user reauest or text from replied messages
@@ -49,18 +49,13 @@ async function commandAI(context: IExtraCtx) {
    */
   let respFromGPT = await ask(<GPTMode>conv.mode, messages);
 
-  if (respFromGPT.isError) {
-    // logger.api.sendMessage({
-    //   text: `Ошибка! Запрос: <code>${context}</code>\n\n\n\n<code>${respFromGPT.answer}</code>`,
-    //   chat_id: env.tg.moderID,
-    // });
-
+  if (respFromGPT.isError && (!conv.title || conv.title == "__new__")) {
     return context.reply(
       "Неизвестная ошибка на стороне бота. Разработчик уже информирован"
     );
   }
 
-  conv.title = respFromGPT.title;
+  conv.title = respFromGPT.title ? respFromGPT.title : conv.title;
 
   conv.messages = messages;
   conv.messages.push({
@@ -80,7 +75,7 @@ async function commandAI(context: IExtraCtx) {
         actualConversation: conv._id,
         wasSentLastRequest: new Date(),
       },
-      $push: {
+      $addToSet: {
         conversations: conv._id,
       },
     },

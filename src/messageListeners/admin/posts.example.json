@@ -1,0 +1,24 @@
+{
+  "id": "string",
+  "feed": {
+    "version": "",
+    "title": "",
+    "home_page_url": "",
+    "feed_url": "",
+    "description": "",
+    "icon": "",
+    "language": null,
+    "items": [
+      {
+        "id": "",
+        "url": "",
+        "title": "",
+        "content_text": "",
+        "content_html": "",
+        "image": "",
+        "date_published": "date",
+        "authors": [{ "name": "@theEoricus" }]
+      }
+    ]
+  }
+}

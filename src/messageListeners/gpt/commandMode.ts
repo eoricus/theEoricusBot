@@ -1,4 +1,3 @@
-import { InlineKeyboard } from "puregram";
 import env from "../../../env.json";
 import data from "../../data";
 import { IConv } from "../../types/IConv";
@@ -44,6 +43,7 @@ async function commandMode(context: IExtraCtx) {
     }));
 
   conv.mode = match.mode || GPTMode.eoricus;
+  
   /**
    * Array of user reauest or text from replied messages
    */

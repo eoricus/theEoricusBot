@@ -2,7 +2,7 @@
 import data from "./data";
 
 /** */
-import { Telegram } from "puregram";
+import { InlineQueryContext, Telegram } from "puregram";
 /** */
 import { HearManager as TelegramHearManager } from "@puregram/hear";
 
@@ -10,19 +10,27 @@ import { HearManager as TelegramHearManager } from "@puregram/hear";
 import IExtraCtx from "./types/IExtraCtx";
 
 /** */
-import registerListeners from "./messageListeners";
+import messageListeners from "./messageListeners";
 // import { ask, GPTMode } from "./messageListeners/gpt/utils";
 
 /** */
 import env from "../env.json";
+/** */
 import callbackQueryListener from "./callbackQueryListener";
 
-const bot = Telegram.fromToken(env.tg.bot.token),
-  logger = Telegram.fromToken(env.tg.logger.token);
+/**
+ *
+ */
+const bot = Telegram.fromToken(env.tg.bot.token);
 
+/**
+ *
+ */
 const botHearManager = new TelegramHearManager<IExtraCtx>();
 
-registerListeners(botHearManager, logger);
+messageListeners.forEach((register) => {
+  register(botHearManager);
+});
 
 /**
  * Modifies the context by adding user fields from the database
@@ -73,5 +81,19 @@ bot.updates.on("message", botHearManager.middleware);
  * Handles button presses
  */
 bot.updates.on("callback_query", callbackQueryListener);
+
+// bot.updates.on("inline_query", (context: InlineQueryContext) => {
+//   console.log(context);
+//   return context.answerInlineQuery([
+//     {
+//       id: "dwdw",
+//       type: "article",
+//       title: "foo bar baz",
+//       input_message_content: {
+//         message_text: "fiz",
+//       },
+//     },
+//   ]);
+// });
 
 export default bot;

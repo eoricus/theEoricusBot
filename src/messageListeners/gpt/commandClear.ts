@@ -1,10 +1,7 @@
 import { InlineKeyboard } from "puregram";
-import env from "../../../env.json";
 import data from "../../data";
-import { IConv } from "../../types/IConv";
 
 import IExtraCtx from "../../types/IExtraCtx";
-import { GPTMode, ask, checkTimeout, getMessages } from "./utils";
 
 async function commandClear(context: IExtraCtx) {
   /**
@@ -56,7 +53,7 @@ async function commandClear(context: IExtraCtx) {
         ];
       });
     };
-    // console.log(convs.leng)
+
     if (convs.length != 0) {
       return context.reply("Выберите диалог, который хотите удалить: ", {
         reply_markup: InlineKeyboard.keyboard(await key()),

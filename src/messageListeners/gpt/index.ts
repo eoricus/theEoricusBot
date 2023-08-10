@@ -15,4 +15,6 @@ export default (manager: HearManager<IExtraCtx>) => {
   manager.hear(/^(\/)?ai/i, commandAI);
   manager.hear(/^(\/)?to/i, commandTo);
   manager.hear(/^(\/)?clear/i, commandClear);
+
+  manager.onFallback(commandAI)
 };

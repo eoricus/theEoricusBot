@@ -3,12 +3,7 @@ import env from "../../../env.json";
 import IExtraCtx from "../../types/IExtraCtx";
 import IPrompt from "../../types/IPrompt";
 
-import { HearManager } from "@puregram/hear";
-import { Context, InlineKeyboard, Telegram } from "puregram";
-
 import { Configuration, OpenAIApi } from "openai";
-import { IConv, IConvFields } from "../../types/IConv";
-import data from "../../data";
 
 /**
  * Represents the available GPT modes
@@ -40,22 +35,23 @@ export async function ask(mode: GPTMode, messages: IPrompt[]) {
       // })),
       ...(systemPrompt as IPrompt[]),
       {
-        role: "user",
+        role: "system",
         content:
-          'Format answer only like JSON, with "answer" and "title" fields. "Answer" is your answer, "title" is short (1-3 words) summarize all previous chat with user (in russian)',
+          "Please provide answers strictly in JSON format, containing two fields: 'answer' and 'title'. The 'answer field should contain your response, while the 'title' field should consist of a 1-3 word summary of the user's previous chat in Russian.",
       },
       ...messages,
     ],
   });
 
-  const message = response.data.choices[0].message?.content || "";
-  const parsedMessage = JSON.parse(message);
-
-  return {
-    title: parsedMessage.title || "",
-    answer: parsedMessage.answer || message,
-    isError: !parsedMessage.answer && !parsedMessage.title,
-  };
+  try {
+    return JSON.parse(response.data.choices[0].message?.content || "");
+  } catch (error) {
+    return {
+      title: null,
+      answer: response.data.choices[0].message?.content || "",
+      isError: true,
+    };
+  }
 }
 
 /**

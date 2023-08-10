@@ -1,11 +1,13 @@
 import { InlineKeyboard } from "puregram";
-import env from "../../../env.json";
 import data from "../../data";
-import { IConv } from "../../types/IConv";
 
 import IExtraCtx from "../../types/IExtraCtx";
-import { GPTMode, ask, checkTimeout, getMessages } from "./utils";
 
+/**
+ * Переход к другому диалогу
+ * @param context 
+ * @returns 
+ */
 async function commandTo(context: IExtraCtx) {
   /**
    * User-specified parameters
@@ -31,12 +33,12 @@ async function commandTo(context: IExtraCtx) {
       return convs.map((conv, i) => {
         return [
           InlineKeyboard.textButton({
-            text: conv.title,
-            payload: JSON.stringify({
+            text: `${conv.title} (${conv.mode})`,
+            payload: {
               command: "to",
               id: conv._id,
-              num: i,
-            }),
+              // num: i, TODO: remember why I add it
+            },
           }),
         ];
       });
@@ -68,11 +70,11 @@ async function commandTo(context: IExtraCtx) {
 
         return convs.map((conv, i) => {
           return InlineKeyboard.textButton({
-            text: conv.title,
+            text: `${conv.title} (${conv.mode})`,
             payload: {
               command: "to",
               id: conv._id,
-              num: i,
+              // num: i, TODO: remember why I add it
             },
           });
         });

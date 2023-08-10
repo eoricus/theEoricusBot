@@ -1,4 +1,3 @@
-import { InlineKeyboard } from "puregram";
 import env from "../../../env.json";
 import data from "../../data";
 import { IConv } from "../../types/IConv";
@@ -30,12 +29,22 @@ async function commandNew(context: IExtraCtx) {
    * Messages and title will change, if match.request
    * or replied message are available
    */
-  let conv: IConv = await data.conv.create({
-    userID: context.senderId || context.chatId,
-    title: "__new__",
-    mode: match.mode || GPTMode.eoricus,
-    messages: [],
-  });
+  let conv: IConv =
+    (await data.conv.findOneAndUpdate(
+      {
+        userID: context.senderId || context.chatId,
+        title: "__new__",
+        isDeleted: false,
+      },
+      match.mode ? { $set: { mode: match.mode } } : {},
+      { new: true }
+    )) ||
+    (await data.conv.create({
+      userID: context.senderId || context.chatId,
+      title: "__new__",
+      mode: match.mode || GPTMode.eoricus,
+      messages: [],
+    }));
 
   /**
    * Array of user reauest or text from replied messages

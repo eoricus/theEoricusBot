@@ -2,7 +2,7 @@ import IExtraCtx from "../../types/IExtraCtx";
 import data from "../../data";
 import env from "../../../env.json";
 
-export async function setPremium(context: IExtraCtx) {
+async function togglePremiumStatus(context: IExtraCtx, status: boolean) {
   /**
    * If the message is a reply, then premium status
    * is assigned to the user whose message is replied to.
@@ -11,7 +11,7 @@ export async function setPremium(context: IExtraCtx) {
    */
   let userID = context.hasReplyMessage()
     ? context.replyMessage.from?.id
-    : context.text?.match(/^(\/)?setPremium\s*@?(?<userID>.*)/i)?.groups
+    : context.text?.match(/^(\/)?(un)?setPremium\s*@?(?<userID>.*)/i)?.groups
         ?.userID;
 
   if (!userID) {
@@ -26,8 +26,8 @@ export async function setPremium(context: IExtraCtx) {
     !isNaN(Number(userID)) ? { userID: userID } : { username: userID },
     {
       $set: {
-        isPremium: true,
-        premiumWasActivated: new Date(),
+        isPremium: status,
+        premiumWasActivated: status ? new Date() : undefined,
       },
     },
     { new: true }
@@ -35,9 +35,20 @@ export async function setPremium(context: IExtraCtx) {
 
   if (premiumUser) {
     return context.reply(
-      `Теперь ${premiumUser.username} может делать неограниченное количество запросов!`
+      status
+        ? `Теперь ${premiumUser.username} может делать неограниченное количество запросов!`
+        : `Теперь ${premiumUser.username} больше не имеет статуса премиум :(\n\n Количество запросов вновь ограничено`
     );
   } else {
     return context.reply(env.default.setPremium.errorUnfoundedUser);
   }
 }
+
+const setPremium = (context: IExtraCtx) => {
+  togglePremiumStatus(context, true);
+};
+const unSetPremium = (context: IExtraCtx) => {
+  togglePremiumStatus(context, false);
+};
+
+export { setPremium, unSetPremium };
