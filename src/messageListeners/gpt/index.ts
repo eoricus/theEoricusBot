@@ -15,6 +15,18 @@ export default (manager: HearManager<IExtraCtx>) => {
   manager.hear(/^(\/)?ai/i, commandAI);
   manager.hear(/^(\/)?to/i, commandTo);
   manager.hear(/^(\/)?clear/i, commandClear);
-
-  manager.onFallback(commandAI)
+  // TODO:
+  // [+] Сделать определение сообщений из канала (пересылок в чат)
+  // [ ] Сделать режим ответов на эти сообщения (типо дополнение)
+  // [ ] Сделать добавление новых постов в базу данных (возможно перенести в channel_post)
+  manager.hear(
+    (text, ctx: IExtraCtx) =>
+      (ctx.isAutomaticForward() || false) &&
+      ctx.chat.username === "theEoricusChat",
+    commandAI
+  );
+  // TODO:
+  // [-] Реализовать function-call-ы для основных команд
+  // [ ] Хранить все сообщения из чатов, и формировать диалоги с юзерами по ним, а не через отдельную базу данных
+  // manager.onFallback(commandAI);
 };

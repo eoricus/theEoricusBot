@@ -33,12 +33,7 @@ bot.updates.on("message", async (ctx: IExtraCtx, next) => {
     (await data.user.findOne({ userID: ctx.senderId })) ||
     (await data.user.create({
       userID: ctx.senderId,
-      // TODO: minimize
-      username: ctx.from
-        ? ctx.from.username
-        : ctx.isPM()
-        ? ctx.chat.username
-        : "",
+      username: ctx.isPM() && ctx.from ? ctx.from.username : ctx.chat.username,
       isPremium: false,
       conversations: [],
       total: 0,
@@ -57,7 +52,6 @@ bot.updates.on("message", async (ctx: IExtraCtx, next) => {
       isPremium: false,
       mailing: true,
     }));
-
   return next();
 });
 
