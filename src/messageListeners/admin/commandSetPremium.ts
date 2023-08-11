@@ -6,7 +6,7 @@ async function togglePremiumStatus(context: IExtraCtx, status: boolean) {
   /**
    * If the message is a reply, then premium status
    * is assigned to the user whose message is replied to.
-   *
+   
    * Otherwise the identifier entered by the user in the message body is used
    */
   let userID = context.hasReplyMessage()

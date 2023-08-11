@@ -33,6 +33,7 @@ bot.updates.on("message", async (ctx: IExtraCtx, next) => {
     (await data.user.findOne({ userID: ctx.senderId })) ||
     (await data.user.create({
       userID: ctx.senderId,
+      // TODO: minimize
       username: ctx.from
         ? ctx.from.username
         : ctx.isPM()

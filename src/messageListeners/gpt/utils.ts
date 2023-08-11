@@ -15,7 +15,14 @@ export enum GPTMode {
   assistant = "assistant",
 }
 
-const openai = new OpenAIApi(new Configuration({ apiKey: env.openai.token }));
+const openai = new OpenAIApi(
+  new Configuration({
+    apiKey: env.openai.token,
+    // if you use not original openai server
+    // for example: github.com/Em1tSan/FreeGPT
+    ...(env.openai.isHacked && { basePath: "http://127.0.0.1:1337" }),
+  })
+);
 
 /**
  * Asks the GPT for a response given the mode and messages

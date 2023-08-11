@@ -5,26 +5,27 @@ import { IConv } from "../../types/IConv";
 import IExtraCtx from "../../types/IExtraCtx";
 import { GPTMode, ask, checkTimeout, getMessages } from "./utils";
 
-async function commandAI(context: IExtraCtx) {
-  if (checkTimeout(context)) {
-    return context.reply(env.default.ai.errorTooManyRequest);
+async function commandAI(ctx: IExtraCtx) {
+  if (checkTimeout(ctx)) {
+    return ctx.reply(env.default.ai.errorTooManyRequest);
   }
 
+  ctx.sendChatAction("typing");
   /**
    * User-specified parameters
    * @param {string|undefined} request
    */
   let match: {
     request?: string;
-  } = context.text?.match(/^((\/)?ai\s*)?(?<request>.*)/i)?.groups || {};
+  } = ctx.text?.match(/^((\/)?ai\s*)?(?<request>.*)/i)?.groups || {};
 
   /**
    * Array of user reauest or text from replied messages
    */
-  let messages = getMessages(match, context);
+  let messages = getMessages(match, ctx);
 
   if (!match.request) {
-    return context.reply(env.default.ai.errorRequestIsEmpty);
+    return ctx.reply(env.default.ai.errorRequestIsEmpty);
   }
 
   /**
@@ -32,9 +33,9 @@ async function commandAI(context: IExtraCtx) {
    * or default fields
    */
   let conv: IConv =
-    context.conv ||
+    ctx.conv ||
     (await data.conv.create({
-      userID: context.senderId || context.chatId,
+      userID: ctx.senderId || ctx.chatId,
       title: "__new__",
       mode: GPTMode.eoricus,
       messages: [],
@@ -50,7 +51,7 @@ async function commandAI(context: IExtraCtx) {
   let respFromGPT = await ask(<GPTMode>conv.mode, messages);
 
   if (respFromGPT.isError && (!conv.title || conv.title == "__new__")) {
-    return context.reply(
+    return ctx.reply(
       "Неизвестная ошибка на стороне бота. Разработчик уже информирован"
     );
   }
@@ -63,7 +64,7 @@ async function commandAI(context: IExtraCtx) {
     content: respFromGPT.answer,
   });
 
-  context.reply(respFromGPT.answer);
+  ctx.reply(respFromGPT.answer);
 
   conv.save();
   await data.user.updateOne(
