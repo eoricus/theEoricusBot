@@ -1,5 +1,5 @@
 import { CallbackQueryContext } from "puregram";
-import data from "./data";
+import data from "../data";
 
 interface QueryPayload {
   command: "to" | "clear" | string;

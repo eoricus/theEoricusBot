@@ -1,7 +1,7 @@
-import env from "../../../env.json";
+import env from "../../../../env.json";
 
-import IExtraCtx from "../../types/IExtraCtx";
-import IPrompt from "../../types/IPrompt";
+import IExtraCtx from "../../../types/IExtraCtx";
+import IPrompt from "../../../types/IPrompt";
 
 import { Configuration, OpenAIApi } from "openai";
 

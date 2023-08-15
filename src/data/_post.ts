@@ -30,4 +30,6 @@ const postSchema = new Schema<IPost>({
   },
 });
 
+postSchema.index({ content: "text" });
+
 export default model<IPost>("Post", postSchema);

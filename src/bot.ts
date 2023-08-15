@@ -5,7 +5,7 @@ import env from "../env.json";
 
 import data from "./data";
 
-import { InlineQueryContext, Telegram } from "puregram";
+import { Telegram } from "puregram";
 import { HearManager as TelegramHearManager } from "@puregram/hear";
 
 /**
@@ -18,10 +18,9 @@ import IExtraCtx from "./types/IExtraCtx";
  * An array of handler registration functions, each of which
  * contains command handlers
  */
-import messageListeners from "./messageListeners";
-// import { ask, GPTMode } from "./messageListeners/gpt/utils";
-
-import callbackQueryListener from "./callbackQueryListener";
+import messageListeners from "./listeners/messageListeners";
+import callbackQueryListener from "./listeners/callbackQueryListener";
+import inlineQueryListener from "./listeners/inlineQueryListener";
 
 const bot = Telegram.fromToken(env.tg.bot.token);
 
@@ -65,18 +64,6 @@ bot.updates.on("message", botHearManager.middleware);
 
 bot.updates.on("callback_query", callbackQueryListener);
 
-// bot.updates.on("inline_query", (context: InlineQueryContext) => {
-//   console.log(context);
-//   return context.answerInlineQuery([
-//     {
-//       id: "dwdw",
-//       type: "article",
-//       title: "foo bar baz",
-//       input_message_content: {
-//         message_text: "fiz",
-//       },
-//     },
-//   ]);
-// });
+bot.updates.on("inline_query", inlineQueryListener);
 
 export default bot;

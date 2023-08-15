@@ -1,11 +1,11 @@
-import env from "../../../env.json";
-import data from "../../data";
-import { IConv } from "../../types/IConv";
+import env from "../../../../env.json";
+import data from "../../../data";
+import { IConv } from "../../../types/IConv";
 
-import IExtraCtx from "../../types/IExtraCtx";
+import IExtraCtx from "../../../types/IExtraCtx";
 import { GPTMode, ask, checkTimeout, getMessages } from "./utils";
 
-async function commandNew(context: IExtraCtx) {
+async function commandMode(context: IExtraCtx) {
   if (checkTimeout(context)) {
     return context.reply(env.default.ai.errorTooManyRequest);
   }
@@ -20,38 +20,36 @@ async function commandNew(context: IExtraCtx) {
     request?: string;
   } =
     context.text?.match(
-      /^(\/)?new\s*(?<mode>(eoricus|linux|coder|assistant))?\s*(?<request>.*)/i
+      /^(\/)?mode\s*(?<mode>(eoricus|linux|coder|assistant))\s*(?<request>.*)/i
     )?.groups || {};
 
+  if (!match.mode) {
+    return context.reply(
+      "Режим не найден :(\nНа данный момент доступны следующие режимы: assistant (базовый), eoricus (мой стиль), linux (консоль), coder (помощник в написании кода)"
+    );
+  }
+
   /**
-   * Base doc of conversation.
-   *
-   * Messages and title will change, if match.request
-   * or replied message are available
+   * User conversation doc, if conv was started
+   * or default fields
    */
   let conv: IConv =
-    (await data.conv.findOneAndUpdate(
-      {
-        userID: context.senderId || context.chatId,
-        title: "__new__",
-        isDeleted: false,
-      },
-      match.mode ? { $set: { mode: match.mode } } : {},
-      { new: true }
-    )) ||
+    context.conv ||
     (await data.conv.create({
       userID: context.senderId || context.chatId,
       title: "__new__",
-      mode: match.mode || GPTMode.eoricus,
+      mode: "",
       messages: [],
     }));
 
+  conv.mode = match.mode || GPTMode.eoricus;
+  
   /**
    * Array of user reauest or text from replied messages
    */
   let messages = getMessages(match, context);
 
-  context.reply(`Запущен новый диалог в режиме ${conv.mode}`);
+  context.reply(`Режим диалога изменен на ${conv.mode}`);
 
   if (messages.length) {
     /**
@@ -61,10 +59,7 @@ async function commandNew(context: IExtraCtx) {
      * @param {string} answer -- chatGPT answer or error message
      * @param {boolean|undefined} isError -- if GPT answer isnt able to parse as a JSON
      */
-    let respFromGPT = await ask(
-      <GPTMode>match.mode || GPTMode.eoricus,
-      messages
-    );
+    let respFromGPT = await ask(<GPTMode>conv.mode, messages);
 
     if (respFromGPT.isError) {
       // logger.api.sendMessage({
@@ -91,15 +86,13 @@ async function commandNew(context: IExtraCtx) {
   conv.save();
 
   await data.user.updateOne(
-    {
-      userID: conv.userID,
-    },
+    { userID: conv.userID },
     {
       $set: {
         actualConversation: conv._id,
         wasSentLastRequest: new Date(),
       },
-      $push: {
+      $addToSet: {
         conversations: conv._id,
       },
     },
@@ -107,4 +100,4 @@ async function commandNew(context: IExtraCtx) {
   );
 }
 
-export default commandNew;
+export default commandMode;

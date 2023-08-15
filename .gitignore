@@ -139,3 +139,4 @@ fastlane/test_output
 iOSInjectionProject/
 .env
 env.json
+posts.json

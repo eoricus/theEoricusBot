@@ -1,8 +1,8 @@
-import env from "../../../env.json";
-import data from "../../data";
-import { IConv } from "../../types/IConv";
+import env from "../../../../env.json";
+import data from "../../../data";
+import { IConv } from "../../../types/IConv";
 
-import IExtraCtx from "../../types/IExtraCtx";
+import IExtraCtx from "../../../types/IExtraCtx";
 import { GPTMode, ask, checkTimeout, getMessages } from "./utils";
 
 async function commandAI(ctx: IExtraCtx) {

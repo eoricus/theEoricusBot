@@ -1,7 +1,7 @@
 import { InlineKeyboard } from "puregram";
-import data from "../../data";
+import data from "../../../data";
 
-import IExtraCtx from "../../types/IExtraCtx";
+import IExtraCtx from "../../../types/IExtraCtx";
 
 async function commandClear(context: IExtraCtx) {
   /**

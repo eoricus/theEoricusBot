@@ -1,5 +1,5 @@
 import { HearManager } from "@puregram/hear";
-import IExtraCtx from "../types/IExtraCtx";
+import IExtraCtx from "../../types/IExtraCtx";
 
 export default (manager: HearManager<IExtraCtx>) => {
   manager.hear(/^(\/)?start/i, (context: IExtraCtx) => {

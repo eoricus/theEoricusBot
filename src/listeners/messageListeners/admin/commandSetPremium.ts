@@ -1,6 +1,6 @@
-import IExtraCtx from "../../types/IExtraCtx";
-import data from "../../data";
-import env from "../../../env.json";
+import IExtraCtx from "../../../types/IExtraCtx";
+import data from "../../../data";
+import env from "../../../../env.json";
 
 async function togglePremiumStatus(context: IExtraCtx, status: boolean) {
   /**

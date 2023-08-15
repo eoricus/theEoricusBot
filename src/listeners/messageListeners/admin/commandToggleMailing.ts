@@ -1,5 +1,6 @@
-import IExtraCtx from "../../types/IExtraCtx";
-import data from "../../data";
+import IExtraCtx from "../../../types/IExtraCtx";
+import data from "../../../data";
+import env from "../../../../env.json";
 
 /**
  * toggleMailing
@@ -7,11 +8,10 @@ import data from "../../data";
  * Toggles mailing from the @theEoricus channel on or off
  */
 async function toggleMailing(context: IExtraCtx, turnOn: boolean) {
-  if (context.isPM()) {
+  if (context.isPM())
     return context.reply(
       "Рассылки работают только в групповых чатах.\nЗачем вам рассылка? Вы можете просто подписаться!\n\n@eoricus"
     );
-  }
 
   context.send(
     context.chatData.mailing === turnOn
